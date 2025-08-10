@@ -103,21 +103,63 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            cd /home/mhylle/projects/mhylle.com
+        script: |
+          set -e
+          
+          echo "🚀 Starting deployment of ${{ env.APP_NAME }}..."
+          
+          # Navigate to infrastructure directory
+          cd ~/projects/mhylle.com
+          
+          # Source environment variables
+          source .env
+          
+          # Log deployment start
+          echo "📝 Logging deployment..."
+          docker exec mhylle-postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "
+            INSERT INTO deployment_logs (
+              app_name, deployment_id, status, frontend_image, backend_image, 
+              version, deployed_by, metadata
+            ) VALUES (
+              '${{ env.APP_NAME }}', 
+              'gh-${{ github.run_id }}', 
+              'started', 
+              '${{ needs.build.outputs.frontend-image }}',
+              '${{ needs.build.outputs.backend-image }}',
+              '${{ needs.build.outputs.version }}',
+              '${{ github.actor }}',
+              '{\"github_run_id\": \"${{ github.run_id }}\", \"commit_sha\": \"${{ github.sha }}\"}'
+            );
+          " || echo "Warning: Failed to log deployment start"
+          
+          # Run deployment script
+          if ./scripts/deploy-app.sh \
+            ${{ env.APP_NAME }} \
+            ${{ needs.build.outputs.frontend-image }} \
+            ${{ needs.build.outputs.backend-image }} \
+            ${{ needs.build.outputs.version }}; then
             
-            # Deploy using the deployment script
-            ./scripts/deploy-app.sh app2 \
-              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:latest \
-              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:latest
+            echo "✅ Deployment successful!"
             
-            # Wait a moment for containers to start
-            sleep 10
+            # Log successful deployment
+            docker exec mhylle-postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "
+              UPDATE deployment_logs 
+              SET status = 'success', completed_at = NOW() 
+              WHERE deployment_id = 'gh-${{ github.run_id }}';
+            " || echo "Warning: Failed to log deployment success"
             
-            # Verify deployment health
-            ./scripts/health-check.sh app2
-
-      - name: Notify deployment status
+          else
+            echo "❌ Deployment failed!"
+            
+            # Log failed deployment
+            docker exec mhylle-postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "
+              UPDATE deployment_logs 
+              SET status = 'failed', completed_at = NOW(), error_message = 'Deployment script failed' 
+              WHERE deployment_id = 'gh-${{ github.run_id }}';
+            " || echo "Warning: Failed to log deployment failure"
+            
+            exit 1
+          fi      - name: Notify deployment status
         if: always()
         run: |
           if [ "${{ job.status }}" == "success" ]; then
