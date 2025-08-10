@@ -2,9 +2,11 @@ version: '3.8'
 
 services:
   app2-frontend:
-    image: ghcr.io/mhylle/mhylle-app2-frontend:latest
+    image: ${FRONTEND_IMAGE:-ghcr.io/mhylle/mhylle-app2-frontend}:${IMAGE_TAG:-latest}
     container_name: app2-frontend
     restart: unless-stopped
+    ports:
+      - "3002:80"
     environment:
       - NODE_ENV=production
     labels:
@@ -16,7 +18,7 @@ services:
       - app2-network
       - mhylle-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -28,9 +30,11 @@ services:
         max-file: "3"
 
   app2-backend:
-    image: ghcr.io/mhylle/mhylle-app2-backend:latest
+    image: ${BACKEND_IMAGE:-ghcr.io/mhylle/mhylle-app2-backend}:${IMAGE_TAG:-latest}
     container_name: app2-backend
     restart: unless-stopped
+    ports:
+      - "8002:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
