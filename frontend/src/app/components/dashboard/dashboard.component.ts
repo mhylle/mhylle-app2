@@ -4,6 +4,9 @@ import { Component, OnInit } from '@angular/core';
   selector: 'app-dashboard',
   template: `
     <div class="dashboard-container">
+      <!-- Hello World Component -->
+      <app-hello-world></app-hello-world>
+      
       <h1>Task Dashboard</h1>
       
       <div class="stats-grid">

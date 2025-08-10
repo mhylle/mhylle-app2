@@ -28,13 +28,15 @@ import { AppComponent } from './app.component';
 import { TaskListComponent } from './components/task-list/task-list.component';
 import { TaskFormComponent } from './components/task-form/task-form.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
+import { HelloWorld } from './hello-world/hello-world';
 
 @NgModule({
   declarations: [
     AppComponent,
     TaskListComponent,
     TaskFormComponent,
-    DashboardComponent
+    DashboardComponent,
+    HelloWorld
   ],
   imports: [
     BrowserModule,
