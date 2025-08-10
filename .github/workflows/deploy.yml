@@ -107,11 +107,11 @@ jobs:
             
             echo "🚀 Starting deployment of app2..."
             
-            # Navigate to application directory
-            cd /home/mhylle/projects/mhylle.com/example-app2
+            # Navigate to main infrastructure directory
+            cd /home/mhylle/projects/mhylle.com
             
-            # Pull latest application code
-            git pull origin main || echo "Git pull failed, continuing with existing code"
+            # Source environment variables
+            source .env
             
             # Extract image tags
             FRONTEND_TAG=$(echo "${{ steps.meta-frontend.outputs.tags }}" | head -n1 | cut -d':' -f2)
@@ -120,22 +120,82 @@ jobs:
             echo "Frontend tag: $FRONTEND_TAG"
             echo "Backend tag: $BACKEND_TAG"
             
+            # Log in to GitHub Container Registry
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
             # Set environment variables for docker-compose
             export FRONTEND_IMAGE="ghcr.io/mhylle/mhylle-app2-frontend"
             export BACKEND_IMAGE="ghcr.io/mhylle/mhylle-app2-backend"
             export IMAGE_TAG="$FRONTEND_TAG"
             
-            # Source main environment variables
-            source ../infrastructure/.env 2>/dev/null || source ../.env || echo "Warning: .env not found"
+            # Create temporary docker-compose for app2 deployment
+            cat > docker-compose.app2.yml << EOF
+            version: '3.8'
             
-            # Stop existing containers gracefully
-            docker-compose down --remove-orphans || true
+            services:
+              app2-frontend:
+                image: \${FRONTEND_IMAGE}:\${IMAGE_TAG}
+                container_name: app2-frontend
+                restart: unless-stopped
+                ports:
+                  - "3002:80"
+                environment:
+                  - NODE_ENV=production
+                networks:
+                  - app2-network
+                  - mhylle-network
+                healthcheck:
+                  test: ["CMD", "curl", "-f", "http://localhost:80/"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
+                  start_period: 30s
+            
+              app2-backend:
+                image: \${BACKEND_IMAGE}:\${IMAGE_TAG}
+                container_name: app2-backend
+                restart: unless-stopped
+                ports:
+                  - "8002:3000"
+                environment:
+                  - NODE_ENV=production
+                  - PORT=3000
+                  - POSTGRES_HOST=mhylle-postgres
+                  - POSTGRES_PORT=5432
+                  - POSTGRES_DB=app2_db
+                  - POSTGRES_USER=\${POSTGRES_USER}
+                  - POSTGRES_PASSWORD=\${POSTGRES_PASSWORD}
+                  - JWT_SECRET=\${APP2_JWT_SECRET:-default_jwt_secret_app2}
+                  - JWT_EXPIRATION=\${JWT_EXPIRATION:-7d}
+                networks:
+                  - app2-network
+                  - mhylle-network
+                depends_on:
+                  - mhylle-postgres
+                healthcheck:
+                  test: ["CMD", "curl", "-f", "http://localhost:3000/api/app2/health"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
+                  start_period: 45s
+            
+            networks:
+              app2-network:
+                driver: bridge
+                name: app2-network
+              mhylle-network:
+                external: true
+                name: mhylle-network
+            EOF
+            
+            # Stop existing app2 containers gracefully
+            docker-compose -f docker-compose.app2.yml down --remove-orphans || true
             
             # Pull latest images
-            docker-compose pull
+            docker-compose -f docker-compose.app2.yml pull
             
             # Start services
-            docker-compose up -d
+            docker-compose -f docker-compose.app2.yml up -d
             
             # Wait for services to be healthy
             echo "⏳ Waiting for services to be healthy..."
