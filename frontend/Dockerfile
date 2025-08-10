@@ -5,7 +5,7 @@ FROM nginx:alpine
 RUN apk add --no-cache curl
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy static HTML files 
 COPY frontend/src/ /usr/share/nginx/html/

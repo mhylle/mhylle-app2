@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app2-frontend:
-    image: ghcr.io/mhylle/app2-frontend:latest
+    image: ghcr.io/mhylle/mhylle-app2-frontend:latest
     container_name: app2-frontend
     restart: unless-stopped
     environment:
@@ -28,7 +28,7 @@ services:
         max-file: "3"
 
   app2-backend:
-    image: ghcr.io/mhylle/app2-backend:latest
+    image: ghcr.io/mhylle/mhylle-app2-backend:latest
     container_name: app2-backend
     restart: unless-stopped
     environment:
