@@ -142,8 +142,7 @@ jobs:
                 environment:
                   - NODE_ENV=production
                 networks:
-                  - app2-network
-                  - mhylle-network
+                  - mhylle_app-network
                 healthcheck:
                   test: ["CMD", "curl", "-f", "http://localhost:80/"]
                   interval: 30s
@@ -168,10 +167,7 @@ jobs:
                   - JWT_SECRET=\${APP2_JWT_SECRET:-default_jwt_secret_app2}
                   - JWT_EXPIRATION=\${JWT_EXPIRATION:-7d}
                 networks:
-                  - app2-network
-                  - mhylle-network
-                depends_on:
-                  - mhylle-postgres
+                  - mhylle_app-network
                 healthcheck:
                   test: ["CMD", "curl", "-f", "http://localhost:3000/api/app2/health"]
                   interval: 30s
@@ -180,12 +176,8 @@ jobs:
                   start_period: 45s
             
             networks:
-              app2-network:
-                driver: bridge
-                name: app2-network
-              mhylle-network:
+              mhylle_app-network:
                 external: true
-                name: mhylle-network
             EOF
             
             # Stop existing app2 containers gracefully
