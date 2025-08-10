@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  app2-frontend:
+    image: ghcr.io/mhylle/app2-frontend:latest
+    container_name: app2-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "traefik.enable=true"
+      - "app.name=app2"
+      - "app.type=frontend"
+    networks:
+      - app2-network
+      - mhylle-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  app2-backend:
+    image: ghcr.io/mhylle/app2-backend:latest
+    container_name: app2-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - POSTGRES_HOST=mhylle-postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=app2_db
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - JWT_SECRET=${APP2_JWT_SECRET:-default_jwt_secret_app2}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-7d}
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "traefik.enable=true"
+      - "app.name=app2"
+      - "app.type=backend"
+    networks:
+      - app2-network
+      - mhylle-network
+    depends_on:
+      - mhylle-postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/app2/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  app2-network:
+    driver: bridge
+    name: app2-network
+    labels:
+      - "app.name=app2"
+  mhylle-network:
+    external: true
+    name: mhylle-network
+
+# Note: PostgreSQL is provided by the main infrastructure
+# This compose file only defines the application-specific services

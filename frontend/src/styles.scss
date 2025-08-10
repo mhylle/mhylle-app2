@@ -1,0 +1,66 @@
+/* You can add global styles to this file, and also import other style files */
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* Global Material Design styling */
+.mat-typography {
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+/* Custom utility classes */
+.spacer {
+  flex: 1 1 auto;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.margin-top {
+  margin-top: 16px;
+}
+
+.margin-bottom {
+  margin-bottom: 16px;
+}
+
+/* Card spacing */
+.mat-card {
+  margin-bottom: 16px;
+}
+
+/* Button spacing */
+.mat-raised-button + .mat-raised-button {
+  margin-left: 8px;
+}
+
+/* Form field spacing */
+.mat-form-field {
+  margin-bottom: 16px;
+}
+
+/* Custom colors */
+.text-primary {
+  color: #1976d2;
+}
+
+.text-secondary {
+  color: #666;
+}
+
+.text-success {
+  color: #4caf50;
+}
+
+.text-warning {
+  color: #ff9800;
+}
+
+.text-danger {
+  color: #f44336;
+}
