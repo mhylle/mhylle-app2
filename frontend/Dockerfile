@@ -1,46 +1,30 @@
-# Multi-stage build for Angular
-FROM node:18-alpine as build
-
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install --production
-
-# Copy source code
-COPY . .
-
-# Build application with correct base href for subpath routing
-RUN npm run build:prod
-
-# Production stage with nginx
+# Simple static frontend for demo
 FROM nginx:alpine
 
-# Copy built application to nginx html directory
-COPY --from=build /app/dist/app2-frontend /usr/share/nginx/html/app2
+# Add curl for health checks
+RUN apk add --no-cache curl
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Create nginx user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nginx -u 1001
+# Copy static HTML files 
+COPY frontend/src/ /usr/share/nginx/html/
 
-# Set proper permissions
-RUN chown -R nginx:nodejs /usr/share/nginx/html && \
-    chown -R nginx:nodejs /var/cache/nginx && \
-    chown -R nginx:nodejs /var/log/nginx && \
-    chown -R nginx:nodejs /etc/nginx/conf.d
+# Create nginx cache directory and set permissions
+RUN mkdir -p /var/cache/nginx/client_temp && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html
 
 # Switch to non-root user
 USER nginx
+
+# Expose port 80
+EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost/health || exit 1
 
-EXPOSE 80
-
+# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
