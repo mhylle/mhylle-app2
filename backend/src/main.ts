@@ -1,49 +1,47 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Set global prefix for API routes to match subpath routing
-  app.setGlobalPrefix('api/app2');
-
-  // Enable CORS for the specific domain and development
+  // Enable CORS for development and production
   app.enableCors({
-    origin: [
-      'https://mhylle.com',
-      'http://localhost:4200',
-      'http://localhost:3000'
-    ],
-    credentials: true,
+    origin: process.env.NODE_ENV === 'production' 
+      ? ['https://mhylle.com', 'https://www.mhylle.com']
+      : ['http://localhost:4200', 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+    credentials: true,
   });
 
-  // Global validation pipe
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  // Health check endpoints (required for Docker health checks)
+  // App2 uses a different path structure
+  app.use('/health', (req, res) => {
+    res.status(200).json({
+      status: 'healthy',
+      application: 'App2 Backend',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development',
+    });
+  });
 
-  // Swagger documentation setup
-  const config = new DocumentBuilder()
-    .setTitle('Task Manager API - App2')
-    .setDescription('API documentation for the Task Manager application')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/app2/docs', app, document);
+  app.use('/api/app2/health', (req, res) => {
+    res.status(200).json({
+      status: 'healthy',
+      application: 'App2 Backend',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development',
+    });
+  });
 
   const port = process.env.PORT || 3000;
-  await app.listen(port);
-  
-  console.log(`🚀 Task Manager API (App2) is running on: http://localhost:${port}/api/app2`);
-  console.log(`📚 API Documentation: http://localhost:${port}/api/app2/docs`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 App2 Backend is running on port ${port}`);
+  console.log(`🏥 Health Check: http://localhost:${port}/health`);
+  console.log(`🏥 API Health Check: http://localhost:${port}/api/app2/health`);
 }
-
 bootstrap();
