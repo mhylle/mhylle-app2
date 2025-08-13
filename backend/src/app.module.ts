@@ -8,11 +8,11 @@ import { Message } from './message.entity';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'app2_user',
-      password: 'app2_password',
-      database: 'mhylle_app2',
+      host: process.env.POSTGRES_HOST || 'localhost',
+      port: parseInt(process.env.POSTGRES_PORT || '5432'),
+      username: process.env.POSTGRES_USER || 'app2_user',
+      password: process.env.POSTGRES_PASSWORD || 'app2_password',
+      database: process.env.POSTGRES_DB || 'mhylle_app2',
       entities: [Message],
       synchronize: true, // Only for development
     }),
